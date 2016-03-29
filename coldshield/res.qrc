@@ -1,0 +1,8 @@
+<RCC>
+    <qresource prefix="/images">
+        <file>\\sbf40010\SHARED\DEWAR\PUBLIC\DF\177\calcSupport\cs1.JPG</file>
+        <file>\\sbf40010\SHARED\DEWAR\PUBLIC\DF\177\calcSupport\cs2.JPG</file>
+        <file>\\sbf40010\SHARED\DEWAR\PUBLIC\DF\177\calcSupport\cs3.JPG</file>
+        <file>\\sbf40010\SHARED\DEWAR\PUBLIC\DF\177\calcSupport\cs4.JPG</file>
+    </qresource>
+</RCC>
