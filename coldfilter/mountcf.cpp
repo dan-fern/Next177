@@ -24,56 +24,27 @@ MountCF::MountCF(QWidget *parent) :
     calc1 = false;
     calc2 = false;
     dataLoaded = false;
-
-    QFile templat("control/templateCF.csv");
-        if(!templat.open(QIODevice::ReadOnly)) {
-            QMessageBox::information(this, tr("Unable to open file"),
-                                     templat.errorString());
-            return;
-        }
-        int i = 1;
-        while (!templat.atEnd()) {
-            QByteArray line = templat.readLine();
-            saveTemplate.insert(i, line.split(',').first().trimmed());
-            saveTable.insert(i, line.split(',').last().trimmed());
-            i++;
-        }
-        saveTemplate.insert(i, "$$$$$$");
-        saveTable.insert(i, "$$$$$$");
-        templat.close();
+    pathTemplate = new QString("control/templateCF.csv");
+    initializeTables( pathTemplate );
+    controlInputDialog = new QInputDialog();
+    kickBox = new QMessageBox();
 }
 
 void MountCF::loadData() {
     bool ok;
-    QInputDialog* inputD = new QInputDialog();
-    inputD->setOptions(QInputDialog::NoButtons);
-    QString text = inputD->getText(this, "Load Data", "Wand or input Control Number:",
-                                    QLineEdit::Normal, inputControl->text(), &ok);
-    if (!ok) {
-        delete inputD;
+    initializeTables( pathTemplate );
+    controlInputDialog->setOptions(QInputDialog::NoButtons);
+    QString inputText = controlInputDialog->getText(this, "Load Data", "Wand or input Control Number:",
+                                      QLineEdit::Normal, inputControl->text(), &ok);
+    if (!ok)
         return;
-    } else if ( ok && (text.isEmpty() || text.length()>12 || text.length()<10) ) {
-        QMessageBox::warning(this, tr("Input Error"),
-                            tr("Enter 10-digit Control with or without leading\"C\""));
-        delete inputD;
+    QString loadText = checkText( inputText );
+    if (!goodText)
         return;
-    }
-    if(text.at(0) == 'C' || text.at(0) == 'c')
-        text.remove(text.at(0));
-    if(text.at(text.length()-1) == ' ')
-        text.remove(text.at(text.length()-1));
-    if(text.toDouble() == 0 || text.length() != 10) {
-        QMessageBox::information(this, tr("Input Error"),
-                            tr("Control Number must be 10 digits. %1").arg(text));
-        delete inputD;
-        return;
-    }
-    QString fileName = "control/" + text.append(".csv");
+    QString fileName = "control/" + loadText + ".csv";
     QFile file(fileName);
     if(!file.open(QIODevice::ReadOnly)) {
-        QMessageBox::information(this, tr("Unable to open file"),
-                                 file.errorString());
-        delete inputD;
+        kickBox->information(this, tr("Unable to open file"), file.errorString());
         return;
     }
     QMap <QString, QString> data;
@@ -85,48 +56,46 @@ void MountCF::loadData() {
     }
     file.close();
     if(data.isEmpty()) {
-        QMessageBox::information(this, tr("No data in file"),
+        kickBox->information(this, tr("No data in file"),
                 tr("The file you are attempting to open contains no data."));
     } else {
         dataLoaded = true;
-        inputControl->setText(data.value(saveTemplate.value(1)));
-        inputSerial->setText(data.value(saveTemplate.value(2)));
-        if (saveTable.values().contains("$$$$$")) {
+        inputControl->setText(data.value(saveTemplate[1]));
+        inputSerial->setText(data.value(saveTemplate[2]));
+        if (saveTable.contains("$$$$$")) {
             //no previous calc data
-            inputCS->setText(QString::number(data.value(saveTemplate.value(14)).toDouble(), 'f', 4));
-            inputFPA1->setText(QString::number(data.value(saveTemplate.value(8)).toDouble(), 'f', 4));
-            inputFPA2->setText(QString::number(data.value(saveTemplate.value(8)).toDouble(), 'f', 4));
+            inputCS->setText(QString::number(data.value(saveTemplate[14]).toDouble(), 'f', 4));
+            inputFPA1->setText(QString::number(data.value(saveTemplate[8]).toDouble(), 'f', 4));
+            inputFPA2->setText(QString::number(data.value(saveTemplate[8]).toDouble(), 'f', 4));
         } else {
             //only calc1 data
-            inputCF1->setText(QString::number(data.value(saveTemplate.value(21)).toDouble(), 'f', 4));
-            inputCS->setText(QString::number(data.value(saveTemplate.value(22)).toDouble(), 'f', 4));
-            inputFPA1->setText(QString::number(data.value(saveTemplate.value(23)).toDouble(), 'f', 4));
+            inputCF1->setText(QString::number(data.value(saveTemplate[21]).toDouble(), 'f', 4));
+            inputCS->setText(QString::number(data.value(saveTemplate[22]).toDouble(), 'f', 4));
+            inputFPA1->setText(QString::number(data.value(saveTemplate[23]).toDouble(), 'f', 4));
             calculateData1( );
-            inputFPA2->setText(QString::number(data.value(saveTemplate.value(8)).toDouble(), 'f', 4));
+            inputFPA2->setText(QString::number(data.value(saveTemplate[8]).toDouble(), 'f', 4));
             inputCS->setEnabled(false);
             inputFPA1->setEnabled(false);
         }
         if (data.contains("******")) {
             //calc1 and calc2 data both exist
-            inputFiducial1->setText(QString::number(data.value(saveTemplate.value(28)).toDouble(), 'f', 4));
-            inputFiducial2->setText(QString::number(data.value(saveTemplate.value(29)).toDouble(), 'f', 4));
-            inputFiducial3->setText(QString::number(data.value(saveTemplate.value(30)).toDouble(), 'f', 4));
-            inputCF2->setText(QString::number(data.value(saveTemplate.value(31)).toDouble(), 'f', 4));
-            inputFPA2->setText(QString::number(data.value(saveTemplate.value(32)).toDouble(), 'f', 4));
+            inputFiducial1->setText(QString::number(data.value(saveTemplate[28]).toDouble(), 'f', 4));
+            inputFiducial2->setText(QString::number(data.value(saveTemplate[29]).toDouble(), 'f', 4));
+            inputFiducial3->setText(QString::number(data.value(saveTemplate[30]).toDouble(), 'f', 4));
+            inputCF2->setText(QString::number(data.value(saveTemplate[31]).toDouble(), 'f', 4));
+            inputFPA2->setText(QString::number(data.value(saveTemplate[32]).toDouble(), 'f', 4));
             calculateData2( );
             inputFPA2->setEnabled(false);
         }
         inputControl->setEnabled(false);
         inputSerial->setEnabled(false);
     }
-    delete inputD;
-    //QMessageBox::information(this, tr("Data Loaded"), tr("Control: C%1").arg(fileName));
 }
 
 void MountCF::saveData() {
     bool ok;
     if ( inputSerial->text().isEmpty() ) {
-        QMessageBox::warning(this, tr("Save Error"), tr("No dewar serial number input."));
+        kickBox->warning(this, tr("Save Error"), tr("No dewar serial number input."));
         return;
     } else if ( inputSerial->text().length() == 2 ) {
         QString str = "0" + inputSerial->text();
@@ -135,74 +104,54 @@ void MountCF::saveData() {
         QString str = "00" + inputSerial->text();
         inputSerial->setText( str );
     }
-    QInputDialog* inputD = new QInputDialog();
-    inputD->setOptions(QInputDialog::NoButtons);
-    QString text = inputD->getText(this, "Save Data", "Wand or input Control Number:",
+    controlInputDialog->setOptions(QInputDialog::NoButtons);
+    QString inputText = controlInputDialog->getText(this, "Save Data", "Wand or input Control Number:",
                                       QLineEdit::Normal, inputControl->text(), &ok);
-    if (!ok) {
-        delete inputD;
+    if (!ok)
         return;
-    } else if ( ok && (text.isEmpty() || text.length()>12 || text.length()<10) ) {
-        QMessageBox::warning(this, tr("Input Error"),
-                            tr("Enter 10-digit Control with or without leading\"C\""));
-        delete inputD;
+    QString saveText = checkText( inputText );
+    if (!goodText)
         return;
-    }
-    if(text.at(0) == 'C' || text.at(0) == 'c')
-        text.remove(text.at(0));
-    if(text.at(text.length()-1) == ' ')
-        text.remove(text.at(text.length()-1));
-    if(text.toDouble() == 0 || text.length() != 10) {
-        QMessageBox::warning(this, tr("Input Error"),
-                            tr("Control Number must be 10 digits. %1").arg(text));
-        delete inputD;
-        return;
-    }
-    inputControl->setText(text);
-    QString fileName = "control/" + text.append(".csv");
+    inputControl->setText(saveText);
+    QString fileName = "control/" + saveText + ".csv";
     if (!dataLoaded && fileExists(fileName)) {
         if (!calc1){
-            QMessageBox::warning(this, tr("Saved Data Detected"),
+            kickBox->warning(this, tr("Saved Data Detected"),
                                 tr("Save data for C%1 detected but not loaded.\n"
                                    "To avoid overwriting production history, "
-                                   "load control data before saving.").arg(text));
+                                   "load control data before saving.").arg(saveText));
         } else {
-            QMessageBox::warning(this, tr("Saved Data Detected"),
+            kickBox->warning(this, tr("Saved Data Detected"),
                                 tr("Save data for C%1 partially loaded.\n"
                                    "Saving additional data will overwrite existing data.\n"
-                                   "Verify all existing and additional data prior to saving.").arg(text));
+                                   "Verify all existing and additional data prior to saving.").arg(saveText));
         }
         QMessageBox::StandardButton reply;
         reply = QMessageBox::question(this, "Overwrite Data",
-                            tr("Are you sure you would like to overwrite %1?").arg(text),
+                            tr("Are you sure you would like to overwrite %1?").arg(saveText),
                                       QMessageBox::Yes|QMessageBox::No);
-        if (reply == QMessageBox::No) {
-            delete inputD;
+        if (reply == QMessageBox::No)
             return;
-        }
     }
-    saveTable = updateSaveTable( calc1, calc2 );
+    updateSaveTable( calc1, calc2 );
     QFile file(fileName);
     QMap <QString, QString> data;
     if(file.open(QFile::WriteOnly|QFile::Truncate)) {
         QTextStream stream(&file);
-        int rowCount = saveTable.size();
+        int rowCount = saveTable.size() - 1;
         for (int i = 1; i <= rowCount; i++) {
-            data.insert(saveTemplate.value(i), saveTable.value(i));
-            stream << saveTemplate.value(i) << ",\t" << saveTable.value(i) << endl;
+            data.insert(saveTemplate[i], saveTable[i]);
+            stream << saveTemplate[i] << ",\t" << saveTable[i] << endl;
         }
         file.close();
     } else {
-        QMessageBox::information(this, tr("Unable to open file"),
-                                 file.errorString());
-        delete inputD;
+        kickBox->information(this, tr("Unable to open file"), file.errorString());
         return;
     }
     if(data.isEmpty()) {
-        QMessageBox::information(this, tr("No data in file"),
+        kickBox->information(this, tr("No data in file"),
                 tr("The file you are attempting to save contains no data."));
     }
-    delete inputD;
 }
 
 void MountCF::clearData() {
@@ -211,7 +160,7 @@ void MountCF::clearData() {
                 && inputFiducial3->text().isEmpty() && inputCS->text().isEmpty()
                 && inputFPA1->text().isEmpty() && inputFPA2->text().isEmpty()
                 && inputCF1->text().isEmpty() && inputCF2->text().isEmpty() ) {
-        QMessageBox::warning(this, tr("Clear Error!!"), tr("No data to clear."));
+        kickBox->warning(this, tr("Clear Error!!"), tr("No data to clear."));
         inputFiducial1->setEnabled(true);
         inputFiducial2->setEnabled(true);
         inputFiducial3->setEnabled(true);
@@ -263,21 +212,21 @@ void MountCF::clearData() {
         inputCS->clear();
         inputFPA1->clear();
     }
-
+    initializeTables( pathTemplate );
 }
 
 void MountCF::calculateData1() {
     if ( inputCF1->text().isEmpty() && inputCS->text().isEmpty()
          && inputFPA1->text().isEmpty() ) {
-        QMessageBox::warning(this, tr("Calculate Error!!"), tr("No input data given."));
+        kickBox->warning(this, tr("Calculate Error!!"), tr("No input data given."));
         return;
     } else if( inputCF1->text().isEmpty() || inputCS->text().isEmpty()
                || inputFPA1->text().isEmpty() ) {
-        QMessageBox::warning(this, tr("Calculate Error!!"), tr("Not enough data to calculate."));
+        kickBox->warning(this, tr("Calculate Error!!"), tr("Not enough data to calculate."));
         return;
     } else if( !inputCF1->text().toDouble() || !inputCS->text().toDouble()
                || !inputFPA1->text().toDouble() ) {
-        QMessageBox::warning(this, tr("Calculate Error!!"), tr("Input data must be numeric."));
+        kickBox->warning(this, tr("Calculate Error!!"), tr("Input data must be numeric."));
         return;
     } else {
         calc1 = true;
@@ -303,7 +252,7 @@ void MountCF::calculateData1() {
         if( sum[choice] > 5.6013 || sum[choice] < 5.5933 ) {
             outputHeight1->setText(QString::number(sum[choice], 'f', 4));
             outputHeight1->setStyleSheet("QLabel { background-color : red; color : black; }");
-            QMessageBox::warning(this, tr("ICD not met"),
+            kickBox->warning(this, tr("ICD not met"),
                         tr("No possible bond line. Expected Height: %1").arg(sum[choice]));
             return;
         //} else if ( choice > 1 && abs(5.5973 - sum[choice]) <= bondline[0]/2 ) {
@@ -330,12 +279,12 @@ void MountCF::calculateData1() {
 void MountCF::calculateData2() {
     if ( inputFiducial1->text().isEmpty() && inputFiducial2->text().isEmpty()
                 && inputFiducial3->text().isEmpty() && inputCF2->text().isEmpty() ) {
-            QMessageBox::warning(this, tr("Calculate Error!!"), tr("No input data given."));
+            kickBox->warning(this, tr("Calculate Error!!"), tr("No input data given."));
             return;
     } else if ( inputFiducial1->text().isEmpty() || inputFiducial2->text().isEmpty()
                 || inputFiducial3->text().isEmpty() ) {
             if ( inputCF2->text().isEmpty() || inputFPA2->text().isEmpty() ) {
-                QMessageBox::warning(this, tr("Calculate Error!!"), tr("Not enough data to calculate."));
+                kickBox->warning(this, tr("Calculate Error!!"), tr("Not enough data to calculate."));
                 return;
             } else if ( !inputCF2->text().isEmpty() && inputCF2->text().toDouble()) {
                 calc2 = true;
@@ -344,13 +293,13 @@ void MountCF::calculateData2() {
                 inputFiducial2->setEnabled(false);
                 inputFiducial3->setEnabled(false);
             } else {
-                QMessageBox::warning(this, tr("Calculate Error!!"), tr("Data must be numeric."));
+                kickBox->warning(this, tr("Calculate Error!!"), tr("Data must be numeric."));
                 return;
             }
     } else {
         if( !inputFiducial1->text().toDouble() || !inputFiducial2->text().toDouble()
                 || !inputFiducial3->text().toDouble() ) {
-            QMessageBox::warning(this, tr("Calculate Error!!"), tr("Data must be numeric."));
+            kickBox->warning(this, tr("Calculate Error!!"), tr("Data must be numeric."));
             return;
         }
         calc2 = true;
@@ -379,29 +328,49 @@ void MountCF::calculateData2() {
             outputParallel->setStyleSheet("QLabel { background-color : green; color : black; }");
         }
     if ( inputFPA2->text().isEmpty() ) {
-            return;
-        } else if( inputCF2->text().isEmpty() || inputFPA2->text().isEmpty() ) {
-            QMessageBox::warning(this, tr("Calculate Error!!"), tr("Not enough data to calculate."));
-            return;
-        } else if( !inputCF2->text().toDouble() || !inputFPA2->text().toDouble() ) {
-            QMessageBox::warning(this, tr("Calculate Error!!"), tr("Data must be numeric."));
-            return;
-        } else {
-            double sum;
-            double cf = inputCF2->text().toDouble();
-            double fpa = inputFPA2->text().toDouble();
+        return;
+    } else if( inputCF2->text().isEmpty() || inputFPA2->text().isEmpty() ) {
+        kickBox->warning(this, tr("Calculate Error!!"), tr("Not enough data to calculate."));
+        return;
+    } else if( !inputCF2->text().toDouble() || !inputFPA2->text().toDouble() ) {
+        kickBox->warning(this, tr("Calculate Error!!"), tr("Data must be numeric."));
+        return;
+    } else {
+        double sum;
+        double cf = inputCF2->text().toDouble();
+        double fpa = inputFPA2->text().toDouble();
 
-            sum = abs(cf) - abs(fpa);
+        sum = abs(cf) - abs(fpa);
 
-            outputHeight2->setText(QString::number(sum, 'f', 4));
-            if(sum > 5.6013 || sum < 5.5933)
-                outputHeight2->setStyleSheet("QLabel { background-color : red; color : black; }");
-            else
-                outputHeight2->setStyleSheet("QLabel { background-color : green; color : black; }");
-        }
+        outputHeight2->setText(QString::number(sum, 'f', 4));
+        if(sum > 5.6013 || sum < 5.5933)
+            outputHeight2->setStyleSheet("QLabel { background-color : red; color : black; }");
+        else
+            outputHeight2->setStyleSheet("QLabel { background-color : green; color : black; }");
+    }
 }
 
-QMap<int, QString> MountCF::updateSaveTable( bool calculated1, bool calculated2 ) {
+void MountCF::initializeTables( QString* path ) {
+    saveTemplate.clear();
+    saveTable.clear();
+    QFile templat(*path);
+    if(!templat.open(QIODevice::ReadOnly)) {
+        kickBox->information(this, tr("Unable to open file"), templat.errorString());
+        return;
+    }
+    while (!templat.atEnd()) {
+        QByteArray line = templat.readLine();
+        saveTemplate << line.split(',').first().trimmed();
+        saveTable << line.split(',').last().trimmed();
+    }
+    saveTemplate.prepend("@@@@@");
+    saveTemplate.append("$$$$$$");
+    saveTable.prepend("@@@@@");
+    saveTable.append("$$$$$$");
+    templat.close();
+}
+
+void MountCF::updateSaveTable( bool calculated1, bool calculated2 ) {
     saveTable[1] = inputControl->text();
     saveTable[2] = inputSerial->text();
     if (calculated1) {
@@ -425,8 +394,6 @@ QMap<int, QString> MountCF::updateSaveTable( bool calculated1, bool calculated2 
         saveTable[35] = "******";
         saveTemplate[35] = "******";
     }
-
-    return saveTable;
 }
 
 bool MountCF::fileExists( QString path ) {
@@ -438,7 +405,30 @@ bool MountCF::fileExists( QString path ) {
         return false;
 }
 
+QString MountCF::checkText( QString text ) {
+    goodText = false;
+    if ( text.isEmpty() || text.length()>12 || text.length()<10 ) {
+        kickBox->warning(this, tr("Input Error"),
+                             tr("Enter 10-digit Control with or without leading\"C\""));
+        return text;
+    }
+    if(text.at(0) == 'C' || text.at(0) == 'c')
+        text.remove(text.at(0));
+    if(text.at(text.length()-1) == ' ')
+        text.remove(text.at(text.length()-1));
+    if(text.toDouble() == 0 || text.length() != 10) {
+        kickBox->warning(this, tr("Input Error"),
+                             tr("Control Number must be 10 digits. %1").arg(text));
+        return text;
+    }
+    goodText = true;
+    return text;
+}
+
 MountCF::~MountCF()
 {
+    delete pathTemplate;
+    delete controlInputDialog;
+    delete kickBox;
     delete ui;
 }

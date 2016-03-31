@@ -3,11 +3,11 @@
 
 #include <QMainWindow>
 #include <QtGui>
-#include <QStringList>
+#include <QTextStream>
 #include <QFile>
 #include <QFileInfo>
-#include <QTextStream>
 #include <QList>
+#include <QStringList>
 #include <QMap>
 #include <iostream>
 #include <cmath>
@@ -58,10 +58,16 @@ private:
     bool calc2;
     bool fiducialCalc;
     bool dataLoaded;
-    QMap <int, QString> saveTemplate;
-    QMap <int, QString> saveTable;
-    QMap <int, QString> updateSaveTable( bool, bool );
+    bool goodText;
+    QMessageBox *kickBox;
+    QInputDialog *controlInputDialog;
+    QString *pathTemplate;
+    QList <QString> saveTemplate;
+    QList <QString> saveTable;
+    void initializeTables( QString* );
+    void updateSaveTable( bool, bool );
     bool fileExists( QString );
+    QString checkText( QString );
 };
 
 #endif // MOUNTCF_H
