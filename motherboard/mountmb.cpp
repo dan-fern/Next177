@@ -15,55 +15,27 @@ MountMB::MountMB(QWidget *parent) :
     outputAngle = MountMB::findChild<QLabel *>("labelOutputAngle");
     outputCenter = MountMB::findChild<QLabel *>("labelOutputCenter");
     dataLoaded = false;
-
-    QFile templat("control/templateMB.csv");
-    if(!templat.open(QIODevice::ReadOnly)) {
-        QMessageBox::information(this, tr("Unable to open file"),
-                                 templat.errorString());
-        return;
-    }
-    int i = 1;
-    while (!templat.atEnd()) {
-        QByteArray line = templat.readLine();
-        saveTemplate.insert(i, line.split(',').first().trimmed());
-        saveTable.insert(i, "0.0");
-        i++;
-    }
-    saveTemplate.insert(i, "***");
-    saveTable.insert(i, "***");
-    templat.close();
+    pathTemplate = new QString("control/templateMB.csv");
+    initializeTables( pathTemplate );
+    controlInputDialog = new QInputDialog();
+    kickBox = new QMessageBox();
 }
 
 void MountMB::loadData() {
     bool ok;
-    QInputDialog* inputD = new QInputDialog();
-    inputD->setOptions(QInputDialog::NoButtons);
-    QString text = inputD->getText(this, "Load Data", "Wand or input Control Number:",
+    initializeTables( pathTemplate );
+    controlInputDialog->setOptions(QInputDialog::NoButtons);
+    QString inputText = controlInputDialog->getText(this, "Load Data", "Wand or input Control Number:",
                                       QLineEdit::Normal, inputControl->text(), &ok);
-    if (!ok) {
-        delete inputD;
+    if (!ok)
         return;
-    } else if ( ok && (text.isEmpty() || text.length()>12 || text.length()<10) ) {
-        QMessageBox::warning(this, tr("Input Error"),
-                             tr("Enter 10-digit Control with or without leading\"C\""));
-		delete inputD;
-		return;
-    }
-    if(text.at(0) == 'C' || text.at(0) == 'c')
-        text.remove(text.at(0));
-    if(text.at(text.length()-1) == ' ')
-        text.remove(text.at(text.length()-1));
-    if(text.toDouble() == 0 || text.length() != 10) {
-        QMessageBox::warning(this, tr("Input Error"), tr("Control Number must be 10 digits. %1").arg(text));
-        delete inputD;
+    QString loadText = checkText( inputText );
+    if (!goodText)
         return;
-    }
-    QString fileName = "control/" + text.append(".csv");
+    QString fileName = "control/" + loadText + ".csv";
     QFile file(fileName);
     if(!file.open(QIODevice::ReadOnly)) {
-        QMessageBox::information(this, tr("Unable to open file"),
-                                 file.errorString());
-        delete inputD;
+        kickBox->information(this, tr("Unable to open file"), file.errorString());
         return;
     }
     QMap <QString, QString> data;
@@ -75,27 +47,26 @@ void MountMB::loadData() {
     }
     file.close();
     if(data.isEmpty()) {
-        QMessageBox::information(this, tr("No data in file"),
+        kickBox->information(this, tr("No data in file"),
                 tr("The file you are attempting to open contains no data."));
     } else {
         dataLoaded = true;
-        inputControl->setText(data.value(saveTemplate.value(1)));
-        inputSerial->setText(data.value(saveTemplate.value(2)));
-        inputSCA1y->setText(QString::number(data.value(saveTemplate.value(3)).toDouble(), 'f', 4));
-        inputSCA1z->setText(QString::number(data.value(saveTemplate.value(4)).toDouble(), 'f', 4));
-        inputSCA2y->setText(QString::number(data.value(saveTemplate.value(5)).toDouble(), 'f', 4));
-        inputSCA2z->setText(QString::number(data.value(saveTemplate.value(6)).toDouble(), 'f', 4));
+        inputControl->setText(data.value(saveTemplate[1]));
+        inputSerial->setText(data.value(saveTemplate[2]));
+        inputSCA1y->setText(QString::number(data.value(saveTemplate[3]).toDouble(), 'f', 4));
+        inputSCA1z->setText(QString::number(data.value(saveTemplate[4]).toDouble(), 'f', 4));
+        inputSCA2y->setText(QString::number(data.value(saveTemplate[5]).toDouble(), 'f', 4));
+        inputSCA2z->setText(QString::number(data.value(saveTemplate[6]).toDouble(), 'f', 4));
         calculateData( );
         inputControl->setEnabled(false);
         inputSerial->setEnabled(false);
     }
-    delete inputD;
 }
 
 void MountMB::saveData() {
     bool ok;
     if ( inputSerial->text().isEmpty() ) {
-        QMessageBox::warning(this, tr("Save Error"), tr("No dewar serial number input."));
+        kickBox->warning(this, tr("Save Error"), tr("No dewar serial number input."));
         return;
     } else if ( inputSerial->text().length() == 2 ) {
         QString str = "0" + inputSerial->text();
@@ -104,66 +75,49 @@ void MountMB::saveData() {
         QString str = "00" + inputSerial->text();
         inputSerial->setText( str );
     }
-    QInputDialog* inputD = new QInputDialog();
-    inputD->setOptions(QInputDialog::NoButtons);
-    QString text = inputD->getText(this, "Save Data", "Wand or input Control Number:",
+    controlInputDialog->setOptions(QInputDialog::NoButtons);
+    QString inputText = controlInputDialog->getText(this, "Save Data", "Wand or input Control Number:",
                                       QLineEdit::Normal, inputControl->text(), &ok);
-    if (!ok) {
-        delete inputD;
+    if (!ok)
         return;
-    } else if ( ok && (text.isEmpty() || text.length()>12 || text.length()<10) ) {
-        QMessageBox::warning(this, tr("Error"),
-                             tr("Enter 10-digit Control with or without leading\"C\""));
-		delete inputD;
-		return;
-    }
-    if(text.at(0) == 'C' || text.at(0) == 'c')
-        text.remove(text.at(0));
-    if(text.at(text.length()-1) == ' ')
-        text.remove(text.at(text.length()-1));
-    if(text.toDouble() == 0 || text.length() != 10) {
-        QMessageBox::warning(this, tr("Input Error"), tr("Control Number must be 10 digits. %1").arg(text));
-        delete inputD;
+    QString saveText = checkText( inputText );
+    if (!goodText)
         return;
-    }
-    QString fileName = "control/" + text.append(".csv");
+    inputControl->setText(saveText);
+    QString fileName = "control/" + saveText + ".csv";
     if (!dataLoaded && fileExists(fileName)) {
-        QMessageBox::warning(this, tr("Saved Data Detected"),
+        kickBox->warning(this, tr("Saved Data Detected"),
                             tr("Save data for C%1 detected but not loaded.\n"
                                "To avoid overwriting production history, "
-                               "load control data before saving.").arg(text));
-        delete inputD;
+                               "load control data before saving.").arg(saveText));
         return;
     }
-    saveTable = updateSaveTable( );
+    updateSaveTable( );
     QFile file(fileName);
     QMap <QString, QString> data;
     if(file.open(QFile::WriteOnly|QFile::Truncate)) {
         QTextStream stream(&file);
-        int rowCount = saveTable.size();
+        int rowCount = saveTable.size() - 1;
         for (int i = 1; i <= rowCount; i++) {
-            data.insert(saveTemplate.value(i), saveTable.value(i));
-            stream << saveTemplate.value(i) << ",\t" << saveTable.value(i) << endl;
+            data.insert(saveTemplate[i], saveTable[i]);
+            stream << saveTemplate[i] << ",\t" << saveTable[i] << endl;
         }
         file.close();
     } else {
-        QMessageBox::information(this, tr("Unable to open file"),
-                                 file.errorString());
-        delete inputD;
+        kickBox->information(this, tr("Unable to open file"), file.errorString());
         return;
     }
     if(data.isEmpty()) {
-        QMessageBox::information(this, tr("No data in file"),
+        kickBox->information(this, tr("No data in file"),
                 tr("The file you are attempting to save contains no data."));
     }
-    delete inputD;
 }
 
 void MountMB::clearData() {
     dataLoaded = false;
     if (inputSCA1y->text().isEmpty() && inputSCA1z->text().isEmpty()
             && inputSCA2y->text().isEmpty() && inputSCA2z->text().isEmpty()) {
-        QMessageBox::warning(this, tr("Clear Error!!"), tr("No data to clear."));
+        kickBox->warning(this, tr("Clear Error!!"), tr("No data to clear."));
         return;
     } else {
         inputSCA1y->clear();
@@ -177,15 +131,16 @@ void MountMB::clearData() {
     }
     inputControl->setEnabled(true);
     inputSerial->setEnabled(true);
+    initializeTables( pathTemplate );
 }
 
 void MountMB::calculateData() {
     if (inputSCA1y->text().isEmpty() || inputSCA1z->text().isEmpty()
             || inputSCA2y->text().isEmpty() || inputSCA2z->text().isEmpty())
-        QMessageBox::warning(this, tr("Calculate Error!!"), tr("No data to calculate."));
+        kickBox->warning(this, tr("Calculate Error!!"), tr("No data to calculate."));
     else if (!inputSCA1y->text().toDouble() || !inputSCA1z->text().toDouble()
             || !inputSCA2y->text().toDouble() || !inputSCA2z->text().toDouble())
-        QMessageBox::warning(this, tr("Calculate Error!!"), tr("Data must be numeric."));
+        kickBox->warning(this, tr("Calculate Error!!"), tr("Data must be numeric."));
     else {
         double angle;
         double center;
@@ -213,7 +168,27 @@ void MountMB::calculateData() {
     }
 }
 
-QMap<int, QString> MountMB::updateSaveTable( ) {
+void MountMB::initializeTables( QString* path ) {
+    saveTemplate.clear();
+    saveTable.clear();
+    QFile templat(*path);
+    if(!templat.open(QIODevice::ReadOnly)) {
+        kickBox->information(this, tr("Unable to open file"), templat.errorString());
+        return;
+    }
+    while (!templat.atEnd()) {
+        QByteArray line = templat.readLine();
+        saveTemplate << line.split(',').first().trimmed();
+        saveTable << line.split(',').last().trimmed();
+    }
+    saveTemplate.prepend("@@@");
+    saveTemplate.append("***");
+    saveTable.prepend("@@@");
+    saveTable.append("***");
+    templat.close();
+}
+
+void MountMB::updateSaveTable( ) {
     saveTable[1] = inputControl->text();
     saveTable[2] = inputSerial->text();
     saveTable[3] = inputSCA1y->text();
@@ -222,8 +197,6 @@ QMap<int, QString> MountMB::updateSaveTable( ) {
     saveTable[6] = inputSCA2z->text();
     saveTable[7] = outputAngle->text();
     saveTable[8] = outputCenter->text();
-
-    return saveTable;
 }
 
 bool MountMB::fileExists( QString path ) {
@@ -235,7 +208,30 @@ bool MountMB::fileExists( QString path ) {
         return false;
 }
 
+QString MountMB::checkText( QString text ) {
+    goodText = false;
+    if ( text.isEmpty() || text.length()>12 || text.length()<10 ) {
+        kickBox->warning(this, tr("Input Error"),
+                             tr("Enter 10-digit Control with or without leading\"C\""));
+        return text;
+    }
+    if(text.at(0) == 'C' || text.at(0) == 'c')
+        text.remove(text.at(0));
+    if(text.at(text.length()-1) == ' ')
+        text.remove(text.at(text.length()-1));
+    if(text.toDouble() == 0 || text.length() != 10) {
+        kickBox->warning(this, tr("Input Error"),
+                             tr("Control Number must be 10 digits. %1").arg(text));
+        return text;
+    }
+    goodText = true;
+    return text;
+}
+
 MountMB::~MountMB()
 {
+    delete pathTemplate;
+    delete controlInputDialog;
+    delete kickBox;
     delete ui;
 }
