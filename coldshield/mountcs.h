@@ -3,11 +3,11 @@
 
 #include <QMainWindow>
 #include <QtGui>
-#include <QStringList>
+#include <QTextStream>
 #include <QFile>
 #include <QFileInfo>
-#include <QTextStream>
 #include <QList>
+#include <QStringList>
 #include <QMap>
 #include <cmath>
 #include <algorithm>
@@ -50,10 +50,16 @@ private:
     QLabel *outputParallel;
     bool plateauCalc;
     bool dataLoaded;
-    QMap <int, QString> saveTemplate;
-    QMap <int, QString> saveTable;
-    QMap <int, QString> updateSaveTable( );
+    bool goodText;
+    QMessageBox *kickBox;
+    QInputDialog *controlInputDialog;
+    QString *pathTemplate;
+    QList <QString> saveTemplate;
+    QList <QString> saveTable;
+    void initializeTables( QString* );
+    void updateSaveTable( );
     bool fileExists( QString );
+    QString checkText( QString );
 };
 
 #endif // MOUNTCS_H
