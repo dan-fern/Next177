@@ -74,9 +74,9 @@ void MountCF::loadData() {
             inputFPA1->setText(QString::number(data.value(saveTemplate[23]).toDouble(), 'f', 4));
             calculateData1( );
             inputFPA2->setText(QString::number(data.value(saveTemplate[8]).toDouble(), 'f', 4));
-            inputCS->setEnabled(false);
-            inputFPA1->setEnabled(false);
         }
+        inputCS->setEnabled(false);
+        inputFPA1->setEnabled(false);
         if (data.contains("******")) {
             //calc1 and calc2 data both exist
             inputFiducial1->setText(QString::number(data.value(saveTemplate[28]).toDouble(), 'f', 4));
@@ -170,6 +170,7 @@ void MountCF::clearData() {
         inputFPA2->setEnabled(true);\
         inputControl->setEnabled(true);
         inputSerial->setEnabled(true);
+        initializeTables( pathTemplate );
     } else if (calc2) {
         calc2 = false;
         inputFiducial1->clear();
@@ -202,6 +203,7 @@ void MountCF::clearData() {
         outputHeight1->setStyleSheet("");
         inputControl->setEnabled(true);
         inputSerial->setEnabled(true);
+        initializeTables( pathTemplate );
     } else {
         inputFiducial1->clear();
         inputFiducial2->clear();
@@ -212,7 +214,6 @@ void MountCF::clearData() {
         inputCS->clear();
         inputFPA1->clear();
     }
-    initializeTables( pathTemplate );
 }
 
 void MountCF::calculateData1() {
