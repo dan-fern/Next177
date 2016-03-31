@@ -58,8 +58,6 @@ void MountCS::loadData() {
         inputControl->setText(data.value(saveTemplate[1]));
         inputSerial->setText(data.value(saveTemplate[2]));
         if (!data.contains("****")) {
-            kickBox->information(this, "BILLY'S HERE!!",
-                                 tr("cf: %1 and bl: %2").arg(saveTable[15]).arg(saveTable[17]));
             inputCF->setText(QString::number(saveTable[15].toDouble(), 'f', 3));
             inputFPA->setText(QString::number(data.value(saveTemplate[8]).toDouble(), 'f', 4));
             inputBL->setText(QString::number(saveTable[17].toDouble(), 'f', 3));
