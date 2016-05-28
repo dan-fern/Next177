@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>ViewBuildData</class>
+ <widget class="QWidget" name="ViewBuildData">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>350</width>
+    <height>750</height>
+   </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>350</width>
+    <height>750</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>350</width>
+    <height>750</height>
+   </size>
+  </property>
+  <property name="windowTitle">
+   <string>Production Data</string>
+  </property>
+  <widget class="QLineEdit" name="lineEditSerial">
+   <property name="geometry">
+    <rect>
+     <x>260</x>
+     <y>95</y>
+     <width>60</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>12</pointsize>
+    </font>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+   <property name="maxLength">
+    <number>3</number>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+   </property>
+   <property name="placeholderText">
+    <string>XXX</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="labelInputSerial">
+   <property name="geometry">
+    <rect>
+     <x>30</x>
+     <y>95</y>
+     <width>180</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>12</pointsize>
+     <strikeout>false</strikeout>
+    </font>
+   </property>
+   <property name="text">
+    <string>Dewar Serial Number:</string>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="lineEditControl">
+   <property name="geometry">
+    <rect>
+     <x>200</x>
+     <y>65</y>
+     <width>120</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>12</pointsize>
+    </font>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+   </property>
+   <property name="placeholderText">
+    <string>XXXXXXXXXX</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="labelInputControl">
+   <property name="geometry">
+    <rect>
+     <x>30</x>
+     <y>65</y>
+     <width>180</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>12</pointsize>
+     <strikeout>false</strikeout>
+    </font>
+   </property>
+   <property name="text">
+    <string>Control Number:</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="labelHeader">
+   <property name="geometry">
+    <rect>
+     <x>30</x>
+     <y>17</y>
+     <width>290</width>
+     <height>30</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>20</pointsize>
+    </font>
+   </property>
+   <property name="layoutDirection">
+    <enum>Qt::LeftToRight</enum>
+   </property>
+   <property name="text">
+    <string>MS-177 Coldstack Data</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignCenter</set>
+   </property>
+  </widget>
+  <widget class="QTableWidget" name="tableView">
+   <property name="geometry">
+    <rect>
+     <x>50</x>
+     <y>140</y>
+     <width>250</width>
+     <height>562</height>
+    </rect>
+   </property>
+   <property name="verticalScrollBarPolicy">
+    <enum>Qt::ScrollBarAlwaysOff</enum>
+   </property>
+   <property name="horizontalScrollBarPolicy">
+    <enum>Qt::ScrollBarAlwaysOff</enum>
+   </property>
+   <property name="autoScroll">
+    <bool>false</bool>
+   </property>
+   <property name="editTriggers">
+    <set>QAbstractItemView::NoEditTriggers</set>
+   </property>
+   <property name="alternatingRowColors">
+    <bool>true</bool>
+   </property>
+   <property name="rowCount">
+    <number>1</number>
+   </property>
+   <property name="columnCount">
+    <number>2</number>
+   </property>
+   <attribute name="horizontalHeaderVisible">
+    <bool>false</bool>
+   </attribute>
+   <attribute name="verticalHeaderVisible">
+    <bool>false</bool>
+   </attribute>
+   <row/>
+   <column/>
+   <column/>
+  </widget>
+ </widget>
+ <layoutdefault spacing="6" margin="11"/>
+ <resources/>
+ <connections/>
+</ui>

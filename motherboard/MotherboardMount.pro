@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui
+QT       += core gui network
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -13,11 +13,14 @@ TEMPLATE = app
 
 
 SOURCES += main.cpp\
-        mountmb.cpp
+        mountmb.cpp\
+		viewbuilddata.cpp
 
-HEADERS  += mountmb.h
+HEADERS  += mountmb.h\
+		viewbuilddata.h
 
-FORMS    += mountmb.ui
+FORMS    += mountmb.ui\
+		viewbuilddata.ui
 
 RESOURCES += \
     res.qrc

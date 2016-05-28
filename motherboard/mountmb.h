@@ -9,12 +9,17 @@
 #include <QList>
 #include <QStringList>
 #include <QMap>
+#include <QDesktopServices>
+#include <QUrl>
 #include <cmath>
 #include <algorithm>
 #include <iostream>
 
+#include <viewbuilddata.h>
+
 class QLabel;
 class QLineEdit;
+class QTextEdit;
 
 namespace Ui {
 class MountMB;
@@ -26,13 +31,20 @@ class MountMB : public QMainWindow
 
 public:
     explicit MountMB(QWidget *parent = 0);
+    //QMap <QString, QString> buildData;
     ~MountMB();
 
 public slots:
+    // in Qt, these are the callouts which link buttons, actions, etc. from UI (XML) to C++ code
     void loadData();
     void saveData();
     void clearData();
     void calculateData();
+    void getScreenShot();
+    void showNotepad();
+    void showCalculations();
+    void showBuildData();
+    void showAbout();
 
 private:
     Ui::MountMB *ui;
@@ -55,6 +67,7 @@ private:
     void updateSaveTable( );
     bool fileExists( QString );
     QString checkText( QString );
+    ViewBuildData *viewBuildData;
 };
 
 #endif // MOUNTMB_H

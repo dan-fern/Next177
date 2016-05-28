@@ -1,6 +1,7 @@
 <RCC>
     <qresource prefix="/images">
         <file>//sbf40010/SHARED/DEWAR/PUBLIC/DF/177/calcSupport/mb3.jpg</file>
+		<file>//sbf40010/SHARED/DEWAR/PUBLIC/DF/177/calcSupport/LM.ico</file>
         <!--<file>mb3.png</file>-->
     </qresource>
 </RCC>
