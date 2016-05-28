@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1140</width>
-    <height>720</height>
+    <height>740</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -19,13 +19,13 @@
   <property name="minimumSize">
    <size>
     <width>1140</width>
-    <height>720</height>
+    <height>740</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
     <width>1140</width>
-    <height>720</height>
+    <height>740</height>
    </size>
   </property>
   <property name="cursor">
@@ -33,6 +33,11 @@
   </property>
   <property name="windowTitle">
    <string>Coldfilter Mount Calculator</string>
+  </property>
+  <property name="windowIcon">
+   <iconset>
+    <normalon>:/images/sbf40010/SHARED/DEWAR/PUBLIC/DF/177/calcSupport/LM.ico</normalon>
+   </iconset>
   </property>
   <widget class="QWidget" name="centralWidget">
    <widget class="QLabel" name="labelHeader1">
@@ -1212,6 +1217,95 @@
    </widget>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
+  <widget class="QMenuBar" name="menuBar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>1140</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>File</string>
+    </property>
+    <addaction name="actionLoad"/>
+    <addaction name="actionSave"/>
+    <addaction name="separator"/>
+    <addaction name="actionExit"/>
+   </widget>
+   <widget class="QMenu" name="menuEdit">
+    <property name="title">
+     <string>Edit</string>
+    </property>
+    <addaction name="actionClear"/>
+    <addaction name="actionScreenShot"/>
+    <addaction name="actionShowNotepad"/>
+   </widget>
+   <widget class="QMenu" name="menuView">
+    <property name="title">
+     <string>View</string>
+    </property>
+    <addaction name="actionShowCalc"/>
+    <addaction name="actionShowBuild"/>
+   </widget>
+   <widget class="QMenu" name="menuHelp">
+    <property name="title">
+     <string>Help</string>
+    </property>
+    <addaction name="actionAbout"/>
+   </widget>
+   <addaction name="menuFile"/>
+   <addaction name="menuEdit"/>
+   <addaction name="menuView"/>
+   <addaction name="menuHelp"/>
+  </widget>
+  <action name="actionLoad">
+   <property name="text">
+    <string>Load Data</string>
+   </property>
+  </action>
+  <action name="actionSave">
+   <property name="text">
+    <string>Save Data</string>
+   </property>
+  </action>
+  <action name="actionExit">
+   <property name="text">
+    <string>Exit</string>
+   </property>
+  </action>
+  <action name="actionClear">
+   <property name="text">
+    <string>Clear Data</string>
+   </property>
+  </action>
+  <action name="actionScreenShot">
+   <property name="text">
+    <string>Get Screenshot</string>
+   </property>
+  </action>
+  <action name="actionShowNotepad">
+   <property name="text">
+    <string>Show Notepad</string>
+   </property>
+  </action>
+  <action name="actionShowCalc">
+   <property name="text">
+    <string>Show Calculations</string>
+   </property>
+  </action>
+  <action name="actionShowBuild">
+   <property name="text">
+    <string>Show Build History</string>
+   </property>
+  </action>
+  <action name="actionAbout">
+   <property name="text">
+    <string>About</string>
+   </property>
+  </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <tabstops>
@@ -1315,6 +1409,150 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>actionShowNotepad</sender>
+   <signal>triggered()</signal>
+   <receiver>MountCF</receiver>
+   <slot>showNotepad()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>569</x>
+     <y>369</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>actionShowCalc</sender>
+   <signal>triggered()</signal>
+   <receiver>MountCF</receiver>
+   <slot>showCalculations()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>569</x>
+     <y>369</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>actionShowBuild</sender>
+   <signal>triggered()</signal>
+   <receiver>MountCF</receiver>
+   <slot>showBuildData()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>569</x>
+     <y>369</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>actionScreenShot</sender>
+   <signal>triggered()</signal>
+   <receiver>MountCF</receiver>
+   <slot>getScreenShot()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>569</x>
+     <y>369</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>actionSave</sender>
+   <signal>triggered()</signal>
+   <receiver>MountCF</receiver>
+   <slot>saveData()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>569</x>
+     <y>369</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>actionLoad</sender>
+   <signal>triggered()</signal>
+   <receiver>MountCF</receiver>
+   <slot>loadData()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>569</x>
+     <y>369</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>actionExit</sender>
+   <signal>triggered()</signal>
+   <receiver>MountCF</receiver>
+   <slot>close()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>569</x>
+     <y>369</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>actionClear</sender>
+   <signal>triggered()</signal>
+   <receiver>MountCF</receiver>
+   <slot>clearData()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>569</x>
+     <y>369</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>actionAbout</sender>
+   <signal>triggered()</signal>
+   <receiver>MountCF</receiver>
+   <slot>showAbout()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>569</x>
+     <y>369</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>loadData()</slot>
@@ -1322,5 +1560,10 @@
   <slot>clearData()</slot>
   <slot>calculateData1()</slot>
   <slot>calculateData2()</slot>
+  <slot>getScreenShot()</slot>
+  <slot>showNotepad()</slot>
+  <slot>showCalculations()</slot>
+  <slot>showBuildData()</slot>
+  <slot>showAbout()</slot>
  </slots>
 </ui>

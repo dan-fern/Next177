@@ -10,13 +10,18 @@
 #include <QStringList>
 #include <QMap>
 #include <iostream>
+#include <QDesktopServices>
+#include <QUrl>
 #include <cmath>
 #include <algorithm>
 #include <array>
 #include <iostream>
 
+#include <viewbuilddata.h>
+
 class QLabel;
 class QLineEdit;
+class QTextEdit;
 
 namespace Ui {
 class MountCF;
@@ -28,6 +33,7 @@ class MountCF : public QMainWindow
 
 public:
     explicit MountCF(QWidget *parent = 0);
+    //QMap <QString, QString> buildData;
     ~MountCF();
 
 public slots:
@@ -36,6 +42,11 @@ public slots:
     void clearData();
     void calculateData1();
     void calculateData2();
+    void getScreenShot();
+    void showNotepad();
+    void showCalculations();
+    void showBuildData();
+    void showAbout();
 
 private:
     Ui::MountCF *ui;
@@ -68,6 +79,7 @@ private:
     void updateSaveTable( bool, bool );
     bool fileExists( QString );
     QString checkText( QString );
+    ViewBuildData *viewBuildData;
 };
 
 #endif // MOUNTCF_H

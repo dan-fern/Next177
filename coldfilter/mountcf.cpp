@@ -24,10 +24,11 @@ MountCF::MountCF(QWidget *parent) :
     calc1 = false;
     calc2 = false;
     dataLoaded = false;
-    pathTemplate = new QString("control/templateCF.csv");
+    pathTemplate = new QString("control/saveTemplate.csv");
     initializeTables( pathTemplate );
     controlInputDialog = new QInputDialog();
     kickBox = new QMessageBox();
+    viewBuildData = new ViewBuildData();
 }
 
 void MountCF::loadData() {
@@ -62,7 +63,7 @@ void MountCF::loadData() {
         dataLoaded = true;
         inputControl->setText(data.value(saveTemplate[1]));
         inputSerial->setText(data.value(saveTemplate[2]));
-        if (saveTable.contains("$$$$$")) {
+        if (!data.contains("*****")) {
             //no previous calc data
             inputCS->setText(QString::number(data.value(saveTemplate[14]).toDouble(), 'f', 4));
             inputFPA1->setText(QString::number(data.value(saveTemplate[8]).toDouble(), 'f', 4));
@@ -351,6 +352,36 @@ void MountCF::calculateData2() {
     }
 }
 
+void MountCF::getScreenShot() {
+    // grab current window and save to desired directory as .png, .xpm, .jpg
+    QString fileName = QFileDialog::getSaveFileName(this, tr("Save Screen Shot"), "",
+                                        tr("Images (*.png *.xpm *.jpg);;All Files (*)"));
+    if(fileName.isEmpty())
+        return;
+    else {
+        QPixmap screenShot = QPixmap::grabWidget(ui->centralWidget);
+        screenShot.save(fileName);
+    }
+}
+
+void MountCF::showNotepad() {
+    viewBuildData->showNotePad();
+}
+
+void MountCF::showCalculations() {
+    viewBuildData->showCalculations( QString("calcs") );
+}
+
+void MountCF::showBuildData() {
+    viewBuildData->showTable(saveTemplate, saveTable);
+    viewBuildData->show();
+}
+
+void MountCF::showAbout() {
+    QString name = "ColdFILTERMount.exe\n";
+    viewBuildData->showAbout( name );
+}
+
 void MountCF::initializeTables( QString* path ) {
     saveTemplate.clear();
     saveTable.clear();
@@ -365,9 +396,7 @@ void MountCF::initializeTables( QString* path ) {
         saveTable << line.split(',').last().trimmed();
     }
     saveTemplate.prepend("@@@@@");
-    saveTemplate.append("$$$$$$");
     saveTable.prepend("@@@@@");
-    saveTable.append("$$$$$$");
     templat.close();
 }
 
@@ -428,8 +457,24 @@ QString MountCF::checkText( QString text ) {
 
 MountCF::~MountCF()
 {
+    delete inputControl;
+    delete inputSerial;
+    delete inputCF1;
+    delete inputCF2;
+    delete inputCS;
+    delete inputFPA1;
+    delete inputFPA2;
+    delete inputFiducial1;
+    delete inputFiducial2;
+    delete inputFiducial3;
+    delete outputBond;
+    delete outputBalls;
+    delete outputHeight1;
+    delete outputHeight2;
+    delete outputParallel;
     delete pathTemplate;
     delete controlInputDialog;
     delete kickBox;
+    delete viewBuildData;
     delete ui;
 }

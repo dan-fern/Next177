@@ -13,11 +13,14 @@ TEMPLATE = app
 
 
 SOURCES += main.cpp\
-        mountcf.cpp
+        mountcf.cpp\
+		viewbuilddata.cpp
 
-HEADERS  += mountcf.h
+HEADERS  += mountcf.h\
+		viewbuilddata.h
 
-FORMS    += mountcf.ui
+FORMS    += mountcf.ui\
+		viewbuilddata.ui
 
 RESOURCES += \
     res.qrc
