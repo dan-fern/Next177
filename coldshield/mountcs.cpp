@@ -11,7 +11,7 @@ MountCS::MountCS(QWidget *parent) :
     inputCS = MountCS::findChild<QLineEdit *>("lineEditCS");
     inputFPA = MountCS::findChild<QLineEdit *>("lineEditFPA");
     inputCF = MountCS::findChild<QLineEdit *>("lineEditCF");
-    inputBL = MountCS::findChild<QLineEdit *>("lineEditBL");
+    inputBL = MountCS::findChild<QComboBox *>("comboBoxBL");
     inputPlateau1 = MountCS::findChild<QLineEdit *>("lineEditPlateau1");
     inputPlateau2 = MountCS::findChild<QLineEdit *>("lineEditPlateau2");
     inputPlateau3 = MountCS::findChild<QLineEdit *>("lineEditPlateau3");
@@ -19,10 +19,11 @@ MountCS::MountCS(QWidget *parent) :
     outputHeight = MountCS::findChild<QLabel *>("labelOutputHeight");
     outputParallel = MountCS::findChild<QLabel *>("labelOutputParallel");
     dataLoaded = false;
-    pathTemplate = new QString("control/templateCS.csv");
+    pathTemplate = new QString("control/saveTemplate.csv");
     initializeTables( pathTemplate );
     controlInputDialog = new QInputDialog();
     kickBox = new QMessageBox();
+    viewBuildData = new ViewBuildData();
 }
 
 void MountCS::loadData() {
@@ -60,7 +61,6 @@ void MountCS::loadData() {
         if (!data.contains("****")) {
             inputCF->setText(QString::number(saveTable[15].toDouble(), 'f', 3));
             inputFPA->setText(QString::number(data.value(saveTemplate[8]).toDouble(), 'f', 4));
-            inputBL->setText(QString::number(saveTable[17].toDouble(), 'f', 3));
         } else {
             inputPlateau1->setText(QString::number(data.value(saveTemplate[10]).toDouble(), 'f', 4));
             inputPlateau2->setText(QString::number(data.value(saveTemplate[11]).toDouble(), 'f', 4));
@@ -69,7 +69,9 @@ void MountCS::loadData() {
             inputCS->setText(QString::number(data.value(saveTemplate[14]).toDouble(), 'f', 4));
             inputCF->setText(QString::number(data.value(saveTemplate[15]).toDouble(), 'f', 3));
             inputFPA->setText(QString::number(data.value(saveTemplate[16]).toDouble(), 'f', 4));
-            inputBL->setText(QString::number(data.value(saveTemplate[17]).toDouble(), 'f', 3));
+            if (inputBL->findText(data.value(saveTemplate[17]))==-1)
+                inputBL->addItem(data.value(saveTemplate[17]));
+            inputBL->setCurrentIndex(inputBL->findText(data.value(saveTemplate[17])));
             calculateData( );
         }
         inputControl->setEnabled(false);
@@ -106,36 +108,41 @@ void MountCS::saveData() {
                             tr("Save data for C%1 detected but not loaded.\n"
                                "To avoid overwriting production history, "
                                "load control data before saving.").arg(saveText));
-        return;
+        QMessageBox::StandardButton reply;
+        reply = QMessageBox::question(this, "Overwrite Data",
+                            tr("Are you sure you would like to overwrite %1?").arg(saveText),
+                                    QMessageBox::Yes|QMessageBox::No);
+        if (reply == QMessageBox::No)
+            return;
     }
     updateSaveTable( );
-	QFile file(fileName);
-	QMap <QString, QString> data;
-	if(file.open(QFile::WriteOnly|QFile::Truncate)) {
-		QTextStream stream(&file);
-        int rowCount = saveTable.size() - 1;
-		for (int i = 1; i <= rowCount; i++) {
-            data.insert(saveTemplate[i], saveTable[i]);
-            stream << saveTemplate[i] << ",\t" << saveTable[i] << endl;
-		}
-		file.close();
-	} else {
-        kickBox->information(this, tr("Unable to open file"), file.errorString());
-		return;
-	}
-	if(data.isEmpty()) {
-        kickBox->information(this, tr("No data in file"),
-                tr("The file you are attempting to save contains no data."));
-	}
+    QFile file(fileName);
+    QMap <QString, QString> data;
+    if(file.open(QFile::WriteOnly|QFile::Truncate)) {
+            QTextStream stream(&file);
+    int rowCount = saveTable.size() - 1;
+            for (int i = 1; i <= rowCount; i++) {
+        data.insert(saveTemplate[i], saveTable[i]);
+        stream << saveTemplate[i] << ",\t" << saveTable[i] << endl;
+            }
+            file.close();
+    } else {
+    kickBox->information(this, tr("Unable to open file"), file.errorString());
+            return;
+    }
+    if(data.isEmpty()) {
+    kickBox->information(this, tr("No data in file"),
+            tr("The file you are attempting to save contains no data."));
+    }
 }
 
 void MountCS::clearData()
 {
     dataLoaded = false;
     if( inputFPA->text().isEmpty() && inputCF->text().isEmpty()
-            && inputBL->text().isEmpty() && inputPlateau1->text().isEmpty()
+            && inputCS->text().isEmpty() && inputPlateau1->text().isEmpty()
             && inputPlateau2->text().isEmpty() && inputPlateau3->text().isEmpty()
-            && inputPlateau4->text().isEmpty() && inputCS->text().isEmpty() ) {
+            && inputPlateau4->text().isEmpty() ) {
         kickBox->warning(this, tr("Clear Error!!"), tr("No data to clear."));
         inputCS->setPlaceholderText("X.XXXX");
         inputPlateau1->setEnabled(true);
@@ -163,7 +170,7 @@ void MountCS::clearData()
     inputFPA->setEnabled(true);
     inputCF->clear();
     inputCF->setEnabled(true);
-    inputBL->clear();
+    inputBL->setCurrentIndex(0);
     outputHeight->clear();
     outputHeight->setStyleSheet("");
     outputParallel->clear();
@@ -225,14 +232,14 @@ void MountCS::calculateData()
         else
             outputParallel->setStyleSheet("QLabel { background-color : green; color : black; }");
     }
-    if ( inputFPA->text().isEmpty() && inputCF->text().isEmpty() && inputBL->text().isEmpty() ) {
+    if ( inputFPA->text().isEmpty() && inputCF->text().isEmpty() ) {
         return;
     } else if( inputCS->text().isEmpty() || inputFPA->text().isEmpty()
-               || inputCF->text().isEmpty() || inputBL->text().isEmpty() ) {
+               || inputCF->text().isEmpty() ) {
         kickBox->warning(this, tr("Calculate Error!!"), tr("Not enough data to calculate."));
         return;
     } else if( !inputCS->text().toDouble() || !inputFPA->text().toDouble()
-               || !inputCF->text().toDouble() || !inputBL->text().toDouble() ) {
+               || !inputCF->text().toDouble() || !inputBL->currentText().toDouble() ) {
         kickBox->warning(this, tr("Calculate Error!!"), tr("Data must be numeric."));
         return;
     } else {
@@ -240,7 +247,7 @@ void MountCS::calculateData()
         double cs = inputCS->text().toDouble();
         double fpa = inputFPA->text().toDouble();
         double cf = inputCF->text().toDouble();
-        double bl = inputBL->text().toDouble();
+        double bl = inputBL->currentText().toDouble();
 
         sum = abs(cs) - abs(fpa) + abs(cf) + abs(bl);
 
@@ -250,6 +257,36 @@ void MountCS::calculateData()
         else
             outputHeight->setStyleSheet("QLabel { background-color : green; color : black; }");
     }
+}
+
+void MountCS::getScreenShot() {
+    // grab current window and save to desired directory as .png, .xpm, .jpg
+    QString fileName = QFileDialog::getSaveFileName(this, tr("Save Screen Shot"), "",
+                                        tr("Images (*.png *.xpm *.jpg);;All Files (*)"));
+    if(fileName.isEmpty())
+        return;
+    else {
+        QPixmap screenShot = QPixmap::grabWidget(ui->centralWidget);
+        screenShot.save(fileName);
+    }
+}
+
+void MountCS::showNotepad() {
+    viewBuildData->showNotePad();
+}
+
+void MountCS::showCalculations() {
+    viewBuildData->showCalculations( QString("calcs") );
+}
+
+void MountCS::showBuildData() {
+    viewBuildData->showTable(saveTemplate, saveTable);
+    viewBuildData->show();
+}
+
+void MountCS::showAbout() {
+    QString name = "ColdshieldMount.exe\n";
+    viewBuildData->showAbout( name );
 }
 
 void MountCS::initializeTables( QString* path ) {
@@ -266,9 +303,7 @@ void MountCS::initializeTables( QString* path ) {
         saveTable << line.split(',').last().trimmed();
     }
     saveTemplate.prepend("@@@@");
-    saveTemplate.append("****");
     saveTable.prepend("@@@@");
-    saveTable.append("****");
     templat.close();
 }
 
@@ -282,9 +317,11 @@ void MountCS::updateSaveTable( ) {
     saveTable[14] = inputCS->text();
     saveTable[15] = inputCF->text();
     saveTable[16] = inputFPA->text();
-    saveTable[17] = inputBL->text();
+    saveTable[17] = inputBL->currentText();
     saveTable[18] = outputHeight->text();
     saveTable[19] = outputParallel->text();
+    saveTable[20] = "****";
+    saveTemplate[20] = "****";
 }
 
 bool MountCS::fileExists( QString path ) {
@@ -318,8 +355,21 @@ QString MountCS::checkText( QString text ) {
 
 MountCS::~MountCS()
 {
+    delete inputControl;
+    delete inputSerial;
+    delete inputCS;
+    delete inputFPA;
+    delete inputCF;
+    delete inputBL;
+    delete inputPlateau1;
+    delete inputPlateau2;
+    delete inputPlateau3;
+    delete inputPlateau4;
+    delete outputHeight;
+    delete outputParallel;
     delete pathTemplate;
     delete controlInputDialog;
     delete kickBox;
+    delete viewBuildData;
     delete ui;
 }
