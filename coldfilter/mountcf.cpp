@@ -247,35 +247,43 @@ void MountCF::calculateData1() {
             balls[i] =  sum[i] + abs(fpa);
             if (i == 0)
                 choice = 0;
-            else if ( abs(5.5973 - sum[i]) < abs(5.5973 - sum[choice]) )
+            else if ( abs(5.5941 - sum[i]) < abs(5.5941 - sum[choice]) )
                 choice = i;
         }
 
-        if( sum[choice] > 5.6013 || sum[choice] < 5.5933 ) {
-            outputHeight1->setText(QString::number(sum[choice], 'f', 4));
-            outputHeight1->setStyleSheet("QLabel { background-color : red; color : black; }");
-            kickBox->warning(this, tr("ICD not met"),
-                        tr("No possible bond line. Expected Height: %1").arg(sum[choice]));
-            return;
-        //} else if ( choice > 1 && abs(5.5973 - sum[choice]) <= bondline[0]/2 ) {
-            //choice = choice - 1;
-        //} else if ( choice > 1 && abs(5.5973 - sum[choice]) <= bondline[0] ) {
-            //choice = choice - 2;
-        }
         outputBond->setText(QString::number(bond[choice], 'f', 4));
         outputBalls->setText(QString::number(balls[choice], 'f', 4));
         outputHeight1->setText(QString::number(sum[choice], 'f', 4));
-        outputHeight1->setStyleSheet("QLabel { background-color : green; color : black; }");
+        if( sum[choice] > 5.6013 || sum[choice] < 5.5933 ) {
+            outputBalls->clear();
+            outputBond->clear();
+            outputHeight1->setText(QString::number(sum[choice], 'f', 4));
+            outputHeight1->setStyleSheet("QLabel { background-color : red; color : black; }");
+            kickBox->critical(this, tr("ICD not met"),
+                        tr("No possible bond line.\nExpected Height: %1").arg(sum[choice]));
+        } else if( sum[choice] == 5.6013 || sum[choice] == 5.5933 ) {
+            outputHeight1->setStyleSheet("QLabel { background-color : yellow; color : black; }");
+            kickBox->warning(this, tr("ICD met at critical dimension"),
+                        tr("Expected ICD height is at extreme of allowable range.\n"
+                           "Expected Height: %1").arg(sum[choice]));
+        } else {
+            outputHeight1->setStyleSheet("QLabel { background-color : green; color : black; }");
+            return;
+        }
+        /*
+        } else if ( choice > 1 && abs(5.5973 - sum[choice]) <= bondline[0]/2 ) {
+            choice = choice - 1;
+        } else if ( choice > 1 && abs(5.5973 - sum[choice]) <= bondline[0] ) {
+            choice = choice - 2;
 
-        //std::cout << bond[0] << " " << bond[1] << " " << bond[2] << " " << bond[4] << std::endl;
-        //std::cout << sum[0] << " " << sum[1] << " " << sum[2] << " " << sum[4] << std::endl;
-        //std::cout << balls[0] << " " << balls[1] << " " << balls[2] << " " << balls[4] << std::endl;
-        //std::cout << bond[choice] << " " << sum[choice] << " " << balls[choice] << std::endl;
-
+        std::cout << bond[0] << " " << bond[1] << " " << bond[2] << " " << bond[4] << std::endl;
+        std::cout << sum[0] << " " << sum[1] << " " << sum[2] << " " << sum[4] << std::endl;
+        std::cout << balls[0] << " " << balls[1] << " " << balls[2] << " " << balls[4] << std::endl;
+        std::cout << bond[choice] << " " << sum[choice] << " " << balls[choice] << std::endl;
+        */
         //QMessageBox::warning(this, tr("BILLY'S HERE!!"), tr("Size: %1").arg(balls.size()));
         return;
     }
-
 }
 
 void MountCF::calculateData2() {
@@ -378,7 +386,7 @@ void MountCF::showBuildData() {
 }
 
 void MountCF::showAbout() {
-    QString name = "ColdFILTERMount.exe\n";
+    QString name = "ColdfilterMount.exe\n";
     viewBuildData->showAbout( name );
 }
 
