@@ -1,14 +1,27 @@
-// mountmb.cpp contains main callouts for motherboard mounting calculator.  loadData() does some
-// basic error checking, loads a .csv file, and populates the appropriate fields.  saveData() checks
-// for duplicate data, updates the saveTable, and writes the saveTable contents to a .csv file.
-// clearData() clears all fields and resets the dataLoaded boolean.  calculateData() checks that all
-// required fields are populated and then calculates "angle" and "centerline" (these formulas are
-// removed).  The calculated values are then checked against the design spec and color-coded
-// accordingly.  getScreenShot() takes a screenshot of the current window and saves to a desired
-// directory.  showNotepad(), showCalculations(), showBuildData(), showAbout() all reference functions
-// in the ViewBuildData class.  initializeTables() sets up the save tables structures for load/save.
-// updateSaveTable() updates the save tables before writing to .csv.  fileExists() and checkText()
-// are error checking functions.
+/* mountmb.cpp contains main callouts for motherboard mounting calculator.
+ *
+ * loadData() does some basic error checking, loads a .csv file, and populates appropriate fields.
+ *
+ * saveData() checks for duplicate data, updates the saveTable, and writes the saveTable contents
+ * to a .csv file.
+ *
+ * clearData() clears all fields and resets the dataLoaded boolean.
+ *
+ * calculateData() checks that all required fields are populated and then calculates FPA Angle
+ * and Optical Centerline.  The calculated values are then checked against the design spec and
+ * color-coded accordingly.
+ *
+ * getScreenShot() takes a screenshot of the current window and saves to a desired directory.
+ *
+ * showNotepad(), showCalculations(), showBuildData(), showTutorial(), showAbout() all reference
+ * functions in the ViewBuildData class.
+ *
+ * initializeTables() sets up the save tables structures for load/save.
+ *
+ * updateSaveTable() updates the save tables before writing to .csv.
+ *
+ * fileExists() and checkText() are error checking functions.
+*/
 
 #include "mountmb.h"
 #include "ui_mountmb.h"
@@ -27,7 +40,9 @@ MountMB::MountMB(QWidget *parent) :
     inputSCA2z = MountMB::findChild<QLineEdit *>("lineEditSCA2z");
     outputAngle = MountMB::findChild<QLabel *>("labelOutputAngle");
     outputCenter = MountMB::findChild<QLabel *>("labelOutputCenter");
+    // dataLoaded is a boolean which will tell whether data has been loaded
     dataLoaded = false;
+    // this is the saving table template path, then tables are initialized
     pathTemplate = new QString("control/saveTemplate.csv");
     initializeTables( pathTemplate );
     controlInputDialog = new QInputDialog();
@@ -37,6 +52,7 @@ MountMB::MountMB(QWidget *parent) :
 
 void MountMB::loadData() {
     bool ok;
+    // reset saving tables
     initializeTables( pathTemplate );
     controlInputDialog->setOptions(QInputDialog::NoButtons);
     QString inputText = controlInputDialog->getText(this, "Load Data", "Wand or input Control Number:",
@@ -183,11 +199,11 @@ void MountMB::calculateData() {
 
         center = ( (z1 - z2) / 2 ) + z2;
 
-        // once calculated, populate output objects and color-code according to spec
         QString angleShow = QString::number(angle, 'f', 4);
         outputAngle->setText(angleShow);
         QString centerShow = QString::number(center, 'f', 4);
         outputCenter->setText(centerShow);
+        // once calculated, populate output objects and color-code according to spec
         if (angle > 11.53 || angle < 10.93)
             outputAngle->setStyleSheet("QLabel { background-color : red; color : black; }");
         else
@@ -216,7 +232,7 @@ void MountMB::showNotepad() {
 }
 
 void MountMB::showCalculations() {
-    viewBuildData->showCalculations( QString("calcs") );
+    viewBuildData->showLink( QString("calcs") );
 }
 
 void MountMB::showBuildData() {
@@ -224,13 +240,17 @@ void MountMB::showBuildData() {
     viewBuildData->show();
 }
 
+void MountMB::showTutorial() {
+    viewBuildData->showLink( QString("tutorial") );
+}
+
 void MountMB::showAbout() {
-    QString name = "MotherboardMount.exe\n";
-    viewBuildData->showAbout( name );
+    QString exeName = "MotherboardMount.exe\n";
+    viewBuildData->showAbout( exeName );
 }
 
 void MountMB::initializeTables( QString* path ) {
-    // reset all tables at .exe launch or during clearData()
+    // reset all tables at .exe launch or during clearData(), etc.
     saveTemplate.clear();
     saveTable.clear();
     QFile templat(*path);
@@ -243,7 +263,7 @@ void MountMB::initializeTables( QString* path ) {
         saveTemplate << line.split(',').first().trimmed();
         saveTable << line.split(',').last().trimmed();
     }
-    // bandaid to line up indices
+    // bandaid to line up indices :(
     saveTemplate.prepend("@@@");
     saveTable.prepend("@@@");
     templat.close();
@@ -259,6 +279,8 @@ void MountMB::updateSaveTable( ) {
     saveTable[6] = inputSCA2z->text();
     saveTable[7] = outputAngle->text();
     saveTable[8] = outputCenter->text();
+    // asterisks are used to tell saveData() in later calculators whether file is new or not
+    // default in saveTemplate is "$$$", which is overwritten to "***", etc.
     saveTable[9] = "***";
     saveTemplate[9] = "***";
 }

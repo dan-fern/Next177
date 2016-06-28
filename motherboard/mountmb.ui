@@ -23,7 +23,7 @@
    </size>
   </property>
   <property name="windowTitle">
-   <string>FPA/MB Mount Calculator</string>
+   <string>SBF-51801 Coldstack Calculator</string>
   </property>
   <property name="windowIcon">
    <iconset>
@@ -701,6 +701,7 @@
     <property name="title">
      <string>Help</string>
     </property>
+    <addaction name="actionTutorial"/>
     <addaction name="actionAbout"/>
    </widget>
    <addaction name="menuFile"/>
@@ -751,6 +752,11 @@
   <action name="actionScreenShot">
    <property name="text">
     <string>Get Screenshot</string>
+   </property>
+  </action>
+  <action name="actionTutorial">
+   <property name="text">
+    <string>How to Use</string>
    </property>
   </action>
  </widget>
@@ -979,6 +985,22 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>actionTutorial</sender>
+   <signal>triggered()</signal>
+   <receiver>MountMB</receiver>
+   <slot>showTutorial()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>284</x>
+     <y>349</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>loadData()</slot>
@@ -989,6 +1011,7 @@
   <slot>showNotepad()</slot>
   <slot>showCalculations()</slot>
   <slot>showBuildData()</slot>
+  <slot>showTutorial()</slot>
   <slot>showAbout()</slot>
  </slots>
 </ui>

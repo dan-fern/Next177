@@ -44,6 +44,7 @@ public slots:
     void showNotepad();
     void showCalculations();
     void showBuildData();
+    void showTutorial();
     void showAbout();
 
 private:
