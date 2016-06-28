@@ -1,7 +1,14 @@
-// ViewBuildData class is shared code used in multiple calculators.  showNotepad() launches a window
-// for taking notes during the build.  showCalculations() shows a .html of the calculations performed
-// at that step.  showTable() outputs a window of all assembly data at that point.  showAbout()
-// provides software development information.
+/* ViewBuildData class is shared code used in multiple calculators.
+ *
+ * showNotepad() launches a window for taking notes during the build.
+ *
+ * showLink() launches a browser to view a .html.  Calculations performed at that step and
+ * calculator tutorials file names are passed to it.
+ *
+ * showTable() outputs a window of all assembly data at that point.
+ *
+ * showAbout() provides software development information.
+*/
 
 #include "viewbuilddata.h"
 #include "ui_viewbuilddata.h"
@@ -10,7 +17,9 @@ ViewBuildData::ViewBuildData(QWidget *parent) :
     QWidget(parent),
     ui(new Ui::ViewBuildData)
 {
+    // ui is used in showTable() to show the production history
     ui->setupUi(this);
+    // set up children variables
     inputControl = ViewBuildData::findChild<QLineEdit *>("lineEditControl");
     inputSerial = ViewBuildData::findChild<QLineEdit *>("lineEditSerial");
     tableView = ViewBuildData::findChild<QTableWidget *>("tableView");
@@ -22,10 +31,10 @@ void ViewBuildData::showNotePad( ) {
     notePad->show();
 }
 
-void ViewBuildData::showCalculations( QString process ) {
-    // takes a string list of commands and passes to cmd to launch a browser with specific .html
+void ViewBuildData::showLink( QString linkName ) {
+    // takes a string list of commands, passes to cmd, launch a browser with specific .html linkName
     //QString path("file://sbf40010/SHARED/DEWAR/PUBLIC/DF/177/calcSupport/" + process + ".html");
-    QString path("file://sbf40010/SHARED/DEWAR/PUBLIC/ENB-Dewar/ENB-DF/coldstackCalculator/calculator/support/" + process + ".html");
+    QString path("file://sbf40010/SHARED/DEWAR/PUBLIC/ENB-Dewar/ENB-DF/coldstackCalculator/calculator/support/" + linkName + ".html");
     QStringList commands;
     commands << "/C" << "start" << path;
     QProcess::startDetached("cmd", commands );
@@ -44,6 +53,7 @@ void ViewBuildData::showTable( QList<QString> tableKeys, QList<QString> tableVal
     inputControl->setEnabled(false);
     inputSerial->setEnabled(false);
     bool isBold = false;
+    // bold values are the "important" values, or those calculated values
     while (rowCount != tableVals.length()-3) {
         tableView->setRowCount(rowCount+1);
         QString str1 = tableKeys[rowCount+3];
@@ -77,13 +87,15 @@ void ViewBuildData::showTable( QList<QString> tableKeys, QList<QString> tableVal
 
 void ViewBuildData::showAbout( QString exeName ) {
     // plug for the author :)
-    QString str1 = "Copyright, Lockheed Martin MFC, 2016\n";
-    QString str2 = "All rights reserved\n";
-    QString str3 = "Originally authored by Daniel Fernandez\n";
-    QString str4 = "http://github.com/loki8999\n";
-    QString allStrings = exeName + str1 + str2 + str3 + str4;
+    QString str1 = "SBF-51801 Coldstack Calculator\n";
+    QString str2 = "Copyright, Lockheed Martin MFC, 2016\n";
+    QString str3 = "All rights reserved\n";
+    QString str4 = "Originally authored by Daniel Fernandez\n";
+    QString str5 = "http://github.com/loki8999\n";
+    QString allStrings = exeName + str1 + str2 + str3 + str4 + str5;
     QMessageBox aboutDialog(QMessageBox::NoIcon, "About", allStrings);
     aboutDialog.exec();
+    // shameless, truly
 }
 
 ViewBuildData::~ViewBuildData()

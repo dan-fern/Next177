@@ -23,7 +23,7 @@ class ViewBuildData : public QWidget
 public:
     explicit ViewBuildData(QWidget *parent = 0);
     void showNotePad( );
-    void showCalculations( QString );
+    void showLink( QString );
     void showTable( QList <QString>, QList <QString> );
     void showAbout( QString );
     ~ViewBuildData();

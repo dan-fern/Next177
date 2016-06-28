@@ -16,6 +16,7 @@
 #include <iostream>
 
 #include <viewbuilddata.h>
+#include <proteuslookup.h>
 
 class QLabel;
 class QLineEdit;
@@ -30,11 +31,12 @@ class MountCS : public QMainWindow
     Q_OBJECT
 
 public:
-    explicit MountCS(QWidget *parent = 0);
+    explicit MountCS(QWidget *parent = 0); 
     //QMap <QString, QString> buildData;
     ~MountCS();
 
 public slots:
+    // in Qt, these are the callouts which link buttons, actions, etc. from UI (XML) to C++ code
     void loadData();
     void saveData();
     void clearData();
@@ -43,7 +45,9 @@ public slots:
     void showNotepad();
     void showCalculations();
     void showBuildData();
+    void showTutorial();
     void showAbout();
+    void checkProteusData1061( );
 
 private:
     Ui::MountCS *ui;
@@ -72,6 +76,8 @@ private:
     bool fileExists( QString );
     QString checkText( QString );
     ViewBuildData *viewBuildData;
+    ProteusLookup *proteus;
+    //QString *rawProteusText;
 };
 
 #endif // MOUNTCS_H
