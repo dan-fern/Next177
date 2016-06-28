@@ -18,6 +18,7 @@
 #include <iostream>
 
 #include <viewbuilddata.h>
+#include <proteuslookup.h>
 
 class QLabel;
 class QLineEdit;
@@ -37,6 +38,7 @@ public:
     ~MountCF();
 
 public slots:
+    // in Qt, these are the callouts which link buttons, actions, etc. from UI (XML) to C++ code
     void loadData();
     void saveData();
     void clearData();
@@ -46,7 +48,10 @@ public slots:
     void showNotepad();
     void showCalculations();
     void showBuildData();
+    void showTutorial();
     void showAbout();
+    void checkProteusData1061( );
+    void checkProteusData1065( );
 
 private:
     Ui::MountCF *ui;
@@ -80,6 +85,7 @@ private:
     bool fileExists( QString );
     QString checkText( QString );
     ViewBuildData *viewBuildData;
+    ProteusLookup *proteus;
 };
 
 #endif // MOUNTCF_H

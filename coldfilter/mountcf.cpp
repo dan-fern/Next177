@@ -1,3 +1,44 @@
+/* mountcf.cpp contains main callouts for coldfilter mounting calculator.
+ *
+ * loadData() does some basic error checking, loads a .csv file, populates the appropriate fields.
+ * Control and dataform numbers are passed to the ProteusLookup class so that PHR history can be
+ * downloaded via ProteusLookup::proteusFetch().
+ *
+ * saveData() checks for duplicate data, updates the saveTable, and writes the saveTable contents
+ * to a .csv file.
+ *
+ * clearData() clears all fields and resets the dataLoaded boolean.
+ *
+ * calculateData1() takes in the measured coldfilter thickness, adds it to the loaded coldshield
+ * height, subtracts the loaded optical centerline and suggests coldfilter epoxy bondlines from a
+ * range of [0.001, 0.0015, 0.002, 0.0025, 0.003] to get the build in spec.  The algebra used is
+ * designed to favor a 0.001" bondline when possible.  Once the bondline is output, corresponding
+ * tool ball height and expected ICD are also output.  The calculated values are then checked
+ * against the design spec and color-coded accordingly.
+ *
+ * calculateData2() checks that all required fields are populated and then calculates Coldfilter
+ * Height, final ICD, and CF Parallelism.  The function is structured to either take in an input
+ * average coldfilter height from inputCF, or to calculate an average height for inputCF from
+ * inputFiducial1, inputFiducial2, and inputFiducial3.  The calculated values are then checked
+ * against the design spec and color-coded accordingly.
+ *
+ * getScreenShot() takes a screenshot of the current window and saves to a desired directory.
+ *
+ * showNotepad(), showCalculations(), showBuildData(), showTutorial(), showAbout() all reference
+ * functions in the ViewBuildData class.
+ *
+ * checkProteusData() calls the ProteusLookup class to verify that the data in the calculator
+ * matches the production data saved in the PHR.  checkProteusData() is segregated by dataform.
+ * It is called by way of the signal/slot in the constructor.
+ *
+ * initializeTables() sets up the save tables structures for load/save.
+ *
+ * updateSaveTable() updates the save tables before writing to .csv.  calc1 and calc2 booleans are
+ * passed to allow mid-assembly saves.
+ *
+ * fileExists() and checkText() are error checking functions.
+*/
+
 #include "mountcf.h"
 #include "ui_mountcf.h"
 
@@ -6,6 +47,7 @@ MountCF::MountCF(QWidget *parent) :
     ui(new Ui::MountCF)
 {
     ui->setupUi(this);
+    // set up local variables from XML in .ui file
     inputControl = MountCF::findChild<QLineEdit *>("lineEditControl");
     inputSerial = MountCF::findChild<QLineEdit *>("lineEditSerial");
     inputCF1 = MountCF::findChild<QLineEdit *>("lineEditCF1");
@@ -21,18 +63,26 @@ MountCF::MountCF(QWidget *parent) :
     outputHeight1 = MountCF::findChild<QLabel *>("labelOutputHeight1");
     outputHeight2 = MountCF::findChild<QLabel *>("labelOutputHeight2");
     outputParallel = MountCF::findChild<QLabel *>("labelOutputParallel");
+    // calc1, calc2 tell the saveTables which data should be updated.
     calc1 = false;
     calc2 = false;
+    // dataLoaded is a boolean which will tell whether data has been loaded
     dataLoaded = false;
+    // this is the saving table template path, then tables are initialized
     pathTemplate = new QString("control/saveTemplate.csv");
     initializeTables( pathTemplate );
     controlInputDialog = new QInputDialog();
     kickBox = new QMessageBox();
     viewBuildData = new ViewBuildData();
+    proteus = new ProteusLookup();
+    // connect signal from ProteusLookup class that data has been downloaded, SLOT checks text
+    connect(proteus, SIGNAL(returnText1061(QString*)), this, SLOT(checkProteusData1061()));
+    connect(proteus, SIGNAL(returnText1065(QString*)), this, SLOT(checkProteusData1065()));
 }
 
 void MountCF::loadData() {
     bool ok;
+    // reset saving tables
     initializeTables( pathTemplate );
     controlInputDialog->setOptions(QInputDialog::NoButtons);
     QString inputText = controlInputDialog->getText(this, "Load Data", "Wand or input Control Number:",
@@ -43,6 +93,10 @@ void MountCF::loadData() {
     if (!goodText)
         return;
     QString fileName = "control/" + loadText + ".csv";
+    // fetch data from proteus, ProteusLookup::proteusFetch( string );
+    proteus->control = "C" + loadText;
+    proteus->proteusFetch( "1061" );
+    proteus->proteusFetch( "1065" );
     QFile file(fileName);
     if(!file.open(QIODevice::ReadOnly)) {
         kickBox->information(this, tr("Unable to open file"), file.errorString());
@@ -50,6 +104,7 @@ void MountCF::loadData() {
     }
     QMap <QString, QString> data;
     int counter = 1;
+    // while loop to populate tables with values from .csv
     while (!file.atEnd()) {
         QByteArray line = file.readLine();
         data.insert(line.split(',').first(), line.split(',').last().trimmed());
@@ -61,30 +116,34 @@ void MountCF::loadData() {
                 tr("The file you are attempting to open contains no data."));
     } else {
         dataLoaded = true;
+        // populate fields in calculator with table data
         inputControl->setText(data.value(saveTemplate[1]));
         inputSerial->setText(data.value(saveTemplate[2]));
+        // now separate which half or halves of the calculator should be populated
         if (!data.contains("*****")) {
-            //no previous calc data
+            //no previous CF calc data, only data from previous calculator used
             inputCS->setText(QString::number(data.value(saveTemplate[14]).toDouble(), 'f', 4));
             inputFPA1->setText(QString::number(data.value(saveTemplate[8]).toDouble(), 'f', 4));
             inputFPA2->setText(QString::number(data.value(saveTemplate[8]).toDouble(), 'f', 4));
         } else {
-            //only calc1 data
+            //only calc1 CF data, left half of UI
             inputCF1->setText(QString::number(data.value(saveTemplate[21]).toDouble(), 'f', 4));
             inputCS->setText(QString::number(data.value(saveTemplate[22]).toDouble(), 'f', 4));
             inputFPA1->setText(QString::number(data.value(saveTemplate[23]).toDouble(), 'f', 4));
+            //once populated, calculate end values and lock control number and serial number fields.
             calculateData1( );
             inputFPA2->setText(QString::number(data.value(saveTemplate[8]).toDouble(), 'f', 4));
         }
         inputCS->setEnabled(false);
         inputFPA1->setEnabled(false);
         if (data.contains("******")) {
-            //calc1 and calc2 data both exist
+            //calc1 and calc2 data both exist, both halves of calculator filled
             inputFiducial1->setText(QString::number(data.value(saveTemplate[28]).toDouble(), 'f', 4));
             inputFiducial2->setText(QString::number(data.value(saveTemplate[29]).toDouble(), 'f', 4));
             inputFiducial3->setText(QString::number(data.value(saveTemplate[30]).toDouble(), 'f', 4));
             inputCF2->setText(QString::number(data.value(saveTemplate[31]).toDouble(), 'f', 4));
             inputFPA2->setText(QString::number(data.value(saveTemplate[32]).toDouble(), 'f', 4));
+            //once populated, calculate end values and lock control number and serial number fields.
             calculateData2( );
             inputFPA2->setEnabled(false);
         }
@@ -98,6 +157,7 @@ void MountCF::saveData() {
     if ( inputSerial->text().isEmpty() ) {
         kickBox->warning(this, tr("Save Error"), tr("No dewar serial number input."));
         return;
+    // next 2 else ifs standardize serial number input
     } else if ( inputSerial->text().length() == 2 ) {
         QString str = "0" + inputSerial->text();
         inputSerial->setText( str );
@@ -115,6 +175,8 @@ void MountCF::saveData() {
         return;
     inputControl->setText(saveText);
     QString fileName = "control/" + saveText + ".csv";
+    // check for duplicate files and if so, should the file be overwritten
+    // also flag user for partial load
     if (!dataLoaded && fileExists(fileName)) {
         if (!calc1){
             kickBox->warning(this, tr("Saved Data Detected"),
@@ -134,12 +196,14 @@ void MountCF::saveData() {
         if (reply == QMessageBox::No)
             return;
     }
+    // update all tables from current calculator fields for writing to .csv
     updateSaveTable( calc1, calc2 );
     QFile file(fileName);
     QMap <QString, QString> data;
     if(file.open(QFile::WriteOnly|QFile::Truncate)) {
         QTextStream stream(&file);
         int rowCount = saveTable.size() - 1;
+        // populate file stream with table data and close
         for (int i = 1; i <= rowCount; i++) {
             data.insert(saveTemplate[i], saveTable[i]);
             stream << saveTemplate[i] << ",\t" << saveTable[i] << endl;
@@ -157,6 +221,7 @@ void MountCF::saveData() {
 
 void MountCF::clearData() {
     dataLoaded = false;
+    // error if no fields populated, set enabled toggled to active in case incorrectly disabled
     if( inputFiducial1->text().isEmpty() && inputFiducial2->text().isEmpty()
                 && inputFiducial3->text().isEmpty() && inputCS->text().isEmpty()
                 && inputFPA1->text().isEmpty() && inputFPA2->text().isEmpty()
@@ -173,6 +238,7 @@ void MountCF::clearData() {
         inputSerial->setEnabled(true);
         initializeTables( pathTemplate );
     } else if (calc2) {
+        // allow to clear 2nd half of calculator while leaving 1st half
         calc2 = false;
         inputFiducial1->clear();
         inputFiducial2->clear();
@@ -181,18 +247,23 @@ void MountCF::clearData() {
         inputFPA2->clear();
         inputFPA2->setEnabled(true);
         if (!fiducialCalc) {
+            // used if calculating average of fiducial heights
             inputFiducial1->setEnabled(true);
             inputFiducial2->setEnabled(true);
             inputFiducial3->setEnabled(true);
         } else {
+            // used if inputting average (not calculating) fiducial heights
             inputCF2->setEnabled(true);
         }
+        // clear text, clear format for 2nd half
         outputHeight2->clear();
         outputHeight2->setStyleSheet("");
         outputParallel->clear();
         outputParallel->setStyleSheet("");
     } else if (calc1) {
+        // clears 1st half if 2nd half empty or previosuly cleared
         calc1 = false;
+        // clear text, clear format, reenable all fields, and reset save tables
         inputCF1->clear();
         inputCS->clear();
         inputCS->setEnabled(true);
@@ -206,6 +277,7 @@ void MountCF::clearData() {
         inputSerial->setEnabled(true);
         initializeTables( pathTemplate );
     } else {
+        // if no calculated, still clear all fields
         inputFiducial1->clear();
         inputFiducial2->clear();
         inputFiducial3->clear();
@@ -218,6 +290,7 @@ void MountCF::clearData() {
 }
 
 void MountCF::calculateData1() {
+    // check for usable data before calculating, 1st half
     if ( inputCF1->text().isEmpty() && inputCS->text().isEmpty()
          && inputFPA1->text().isEmpty() ) {
         kickBox->warning(this, tr("Calculate Error!!"), tr("No input data given."));
@@ -232,7 +305,9 @@ void MountCF::calculateData1() {
         return;
     } else {
         calc1 = true;
+        // create array of possible coldfilter bondlines
         double bondline [] = { 0.0010, 0.0015, 0.0020, 0.0025, 0.0030 };
+        // create vectors for bondlines, ball heights, and associated sums
         std::vector<double> bond;
         bond.assign(bondline, bondline+5);
         std::vector<double> balls (bond.size());
@@ -242,6 +317,8 @@ void MountCF::calculateData1() {
         double fpa = inputFPA1->text().toDouble();
         int choice;
 
+        // loop over size of possible coldfilter bondlines (5) and find bond value which gets build
+        // closest to spec.  Written to favor a 0.001" bondline when possible
         for ( int i = 0; i < 5; i++ ) {
             sum[i] = abs(cf) + abs(cs) - abs(fpa) + abs(bond[i]);
             balls[i] =  sum[i] + abs(fpa);
@@ -251,10 +328,13 @@ void MountCF::calculateData1() {
                 choice = i;
         }
 
+        // once choice is determined, bondline at index choice is selected for build.  Ball height
+        // and expected ICD associated with that bondline are also given.
         outputBond->setText(QString::number(bond[choice], 'f', 4));
         outputBalls->setText(QString::number(balls[choice], 'f', 4));
         outputHeight1->setText(QString::number(sum[choice], 'f', 4));
         if( sum[choice] > 5.6013 || sum[choice] < 5.5933 ) {
+            // if no good bondline, kick out
             outputBalls->clear();
             outputBond->clear();
             outputHeight1->setText(QString::number(sum[choice], 'f', 4));
@@ -262,11 +342,13 @@ void MountCF::calculateData1() {
             kickBox->critical(this, tr("ICD not met"),
                         tr("No possible bond line.\nExpected Height: %1").arg(sum[choice]));
         } else if( sum[choice] == 5.6013 || sum[choice] == 5.5933 ) {
+            // ICD barely met.  Flags user to take extreme caution
             outputHeight1->setStyleSheet("QLabel { background-color : yellow; color : black; }");
             kickBox->warning(this, tr("ICD met at critical dimension"),
                         tr("Expected ICD height is at extreme of allowable range.\n"
                            "Expected Height: %1").arg(sum[choice]));
         } else {
+            // otherwise, all is well, proceed with build
             outputHeight1->setStyleSheet("QLabel { background-color : green; color : black; }");
             return;
         }
@@ -287,25 +369,29 @@ void MountCF::calculateData1() {
 }
 
 void MountCF::calculateData2() {
+    // check for usable data before calculating 2nd half
     if ( inputFiducial1->text().isEmpty() && inputFiducial2->text().isEmpty()
                 && inputFiducial3->text().isEmpty() && inputCF2->text().isEmpty() ) {
-            kickBox->warning(this, tr("Calculate Error!!"), tr("No input data given."));
-            return;
+        kickBox->warning(this, tr("Calculate Error!!"), tr("No input data given."));
+        return;
+    // conditional if no fiducial heights (3) are present (coldfilter height input, not calculated)
     } else if ( inputFiducial1->text().isEmpty() || inputFiducial2->text().isEmpty()
                 || inputFiducial3->text().isEmpty() ) {
-            if ( inputCF2->text().isEmpty() || inputFPA2->text().isEmpty() ) {
-                kickBox->warning(this, tr("Calculate Error!!"), tr("Not enough data to calculate."));
-                return;
-            } else if ( !inputCF2->text().isEmpty() && inputCF2->text().toDouble()) {
-                calc2 = true;
-                fiducialCalc = false;
-                inputFiducial1->setEnabled(false);
-                inputFiducial2->setEnabled(false);
-                inputFiducial3->setEnabled(false);
-            } else {
-                kickBox->warning(this, tr("Calculate Error!!"), tr("Data must be numeric."));
-                return;
-            }
+        if ( inputCF2->text().isEmpty() || inputFPA2->text().isEmpty() ) {
+            kickBox->warning(this, tr("Calculate Error!!"), tr("Not enough data to calculate."));
+            return;
+        } else if ( !inputCF2->text().isEmpty() && inputCF2->text().toDouble()) {
+            calc2 = true;
+            // average coldfilter height is input, not calculated, plateau fields are locked out
+            // code will skip down to try and calculate final ICD Height, or sum, and not parallelism
+            fiducialCalc = false;
+            inputFiducial1->setEnabled(false);
+            inputFiducial2->setEnabled(false);
+            inputFiducial3->setEnabled(false);
+        } else {
+            kickBox->warning(this, tr("Calculate Error!!"), tr("Data must be numeric."));
+            return;
+        }
     } else {
         if( !inputFiducial1->text().toDouble() || !inputFiducial2->text().toDouble()
                 || !inputFiducial3->text().toDouble() ) {
@@ -313,6 +399,7 @@ void MountCF::calculateData2() {
             return;
         }
         calc2 = true;
+        // fiducial heights (3) will be used to calculate average coldfilter height
         fiducialCalc = true;
         inputCF2->setEnabled(false);
         outputHeight2->clear();
@@ -322,6 +409,7 @@ void MountCF::calculateData2() {
         double fid1 = inputFiducial1->text().toDouble();
         double fid2 = inputFiducial2->text().toDouble();
         double fid3 = inputFiducial3->text().toDouble();
+        // parallelism only possible if (3) fiducial heights input to calculate average height
         QList<double> fiducials;
         fiducials << fid1 << fid2 << fid3;
         std::sort( fiducials.begin(), fiducials.end() );
@@ -332,11 +420,13 @@ void MountCF::calculateData2() {
 
         inputCF2->setText(QString::number(avg, 'f', 4));
         outputParallel->setText(QString::number(parallel, 'f', 4));
+        // once calculated, populate output objects and color-code according to spec
         if ( parallel > 0.0030 )
             outputParallel->setStyleSheet("QLabel { background-color : red; color : black; }");
         else
             outputParallel->setStyleSheet("QLabel { background-color : green; color : black; }");
         }
+    // now do final ICD Height, or sum
     if ( inputFPA2->text().isEmpty() ) {
         return;
     } else if( inputCF2->text().isEmpty() || inputFPA2->text().isEmpty() ) {
@@ -346,6 +436,8 @@ void MountCF::calculateData2() {
         kickBox->warning(this, tr("Calculate Error!!"), tr("Data must be numeric."));
         return;
     } else {
+        // sum calculated here, inputCF value comes from either typed input or calculated avg
+        // based on above conditionals
         double sum;
         double cf = inputCF2->text().toDouble();
         double fpa = inputFPA2->text().toDouble();
@@ -353,6 +445,7 @@ void MountCF::calculateData2() {
         sum = abs(cf) - abs(fpa);
 
         outputHeight2->setText(QString::number(sum, 'f', 4));
+        // once calculated, populate output objects and color-code according to spec
         if(sum > 5.6013 || sum < 5.5933)
             outputHeight2->setStyleSheet("QLabel { background-color : red; color : black; }");
         else
@@ -377,7 +470,7 @@ void MountCF::showNotepad() {
 }
 
 void MountCF::showCalculations() {
-    viewBuildData->showCalculations( QString("calcs") );
+    viewBuildData->showLink( QString("calcs") );
 }
 
 void MountCF::showBuildData() {
@@ -385,12 +478,30 @@ void MountCF::showBuildData() {
     viewBuildData->show();
 }
 
+void MountCF::showTutorial() {
+    viewBuildData->showLink( QString("tutorial") );
+}
+
 void MountCF::showAbout() {
     QString name = "ColdfilterMount.exe\n";
     viewBuildData->showAbout( name );
 }
 
+void MountCF::checkProteusData1061( ) {
+    // when ProteusLookup::replyFinished1061 finishes, it signals this function to check pulled text
+    // inputFPA is passed to checkFectchedText() to compare it to what is in the PHR.
+    proteus->checkFetchedText(inputFPA1->text(), 1061);
+    proteus->checkFetchedText(inputFPA2->text(), 1061);
+}
+
+void MountCF::checkProteusData1065( ) {
+    // when ProteusLookup::replyFinished1065 finishes, it signals this function to check pulled text
+    // inputCS is passed to checkFectchedText() to compare it to what is in the PHR.
+    proteus->checkFetchedText(inputCS->text(), 1065);
+}
+
 void MountCF::initializeTables( QString* path ) {
+    // reset all tables at .exe launch or during clearData(), etc
     saveTemplate.clear();
     saveTable.clear();
     QFile templat(*path);
@@ -403,6 +514,7 @@ void MountCF::initializeTables( QString* path ) {
         saveTemplate << line.split(',').first().trimmed();
         saveTable << line.split(',').last().trimmed();
     }
+    // bandaid to line up indices :(
     saveTemplate.prepend("@@@@@");
     saveTable.prepend("@@@@@");
     templat.close();
@@ -411,6 +523,7 @@ void MountCF::initializeTables( QString* path ) {
 void MountCF::updateSaveTable( bool calculated1, bool calculated2 ) {
     saveTable[1] = inputControl->text();
     saveTable[2] = inputSerial->text();
+    // get all current data from calulator fields and insert in saveTable array
     if (calculated1) {
         saveTable[21] = inputCF1->text();
         saveTable[22] = inputCS->text();
@@ -418,6 +531,8 @@ void MountCF::updateSaveTable( bool calculated1, bool calculated2 ) {
         saveTable[24] = outputBond->text();
         saveTable[25] = outputBalls->text();
         saveTable[26] = outputHeight1->text();
+        // asterisks are used to tell saveData() whether file is fully or only half saved.
+        // default in saveTemplate is "$$$$$", which is overwritten to "*****", etc.
         saveTable[27] = "*****";
         saveTemplate[27] = "*****";
     }
@@ -429,6 +544,8 @@ void MountCF::updateSaveTable( bool calculated1, bool calculated2 ) {
         saveTable[32] = inputFPA2->text();
         saveTable[33] = outputHeight2->text();
         saveTable[34] = outputParallel->text();
+        // asterisks are used to tell saveData() whether file is fully or only half saved.
+        // default in saveTemplate is "$$$$$$", which is overwritten to "******", etc.
         saveTable[35] = "******";
         saveTemplate[35] = "******";
     }
@@ -444,6 +561,7 @@ bool MountCF::fileExists( QString path ) {
 }
 
 QString MountCF::checkText( QString text ) {
+    // checks control number input for format, edits out leading 'C' or trailing space
     goodText = false;
     if ( text.isEmpty() || text.length()>12 || text.length()<10 ) {
         kickBox->warning(this, tr("Input Error"),
@@ -484,5 +602,6 @@ MountCF::~MountCF()
     delete controlInputDialog;
     delete kickBox;
     delete viewBuildData;
+    delete proteus;
     delete ui;
 }

@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui
+QT       += core gui network
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -14,13 +14,16 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
         mountcf.cpp\
-		viewbuilddata.cpp
+		viewbuilddata.cpp\
+		proteuslookup.cpp
 
 HEADERS  += mountcf.h\
-		viewbuilddata.h
+		viewbuilddata.h\
+		proteuslookup.h
 
 FORMS    += mountcf.ui\
-		viewbuilddata.ui
+		viewbuilddata.ui\
+		proteuslookup.ui
 
 RESOURCES += \
     res.qrc
